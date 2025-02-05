@@ -83,13 +83,24 @@
             }
         }
 
+        // Create a download link
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
         link.download = fileName;
         link.textContent = `Download ${fileName}`;
-        resultDiv.innerHTML = '';
+        link.style.display = 'block';
+        link.style.marginTop = '10px';
+
+        // Add instructions for sharing
+        resultDiv.innerHTML = `
+            <p>Click the link below to download the file:</p>
+            <p>To share this file with others, upload it to a cloud storage service or host it on a server.</p>
+        `;
         resultDiv.appendChild(link);
+
+        // Revoke the object URL to free memory after a delay
+        setTimeout(() => URL.revokeObjectURL(url), 60000); // 1 minute
     }
 </script>
 </body>
