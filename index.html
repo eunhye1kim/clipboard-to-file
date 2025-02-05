@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Upload Bypass</title>
+    <title>File Upload to GitHub</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -30,7 +30,11 @@
 </head>
 <body>
 <div class="container">
-    <h1>File Upload Bypass</h1>
+    <h1>File Upload to GitHub</h1>
+
+    <label for="githubToken">GitHub Personal Access Token (PAT):</label>
+    <input type="password" id="githubToken" placeholder="Enter your GitHub PAT">
+
     <label for="fileType">Select Input Type:</label>
     <select id="fileType">
         <option value="text">Text</option>
@@ -49,11 +53,17 @@
 </div>
 
 <script>
-    function handleSubmit() {
+    async function handleSubmit() {
+        const githubToken = document.getElementById('githubToken').value.trim();
         const fileType = document.getElementById('fileType').value;
         const fileName = document.getElementById('fileName').value.trim();
         const fileContent = document.getElementById('fileContent').value.trim();
         const resultDiv = document.getElementById('result');
+
+        if (!githubToken) {
+            resultDiv.innerHTML = '<p style="color: red;">Please enter your GitHub PAT.</p>';
+            return;
+        }
 
         if (!fileName) {
             resultDiv.innerHTML = '<p style="color: red;">Please enter a valid file name.</p>';
@@ -65,42 +75,72 @@
             return;
         }
 
-        let blob;
+        let contentToUpload;
         if (fileType === 'text') {
-            blob = new Blob([fileContent], { type: 'text/plain' });
+            contentToUpload = btoa(unescape(encodeURIComponent(fileContent))); // Text to Base64
         } else if (fileType === 'binary') {
             try {
-                const byteCharacters = atob(fileContent);
-                const byteNumbers = new Array(byteCharacters.length);
-                for (let i = 0; i < byteCharacters.length; i++) {
-                    byteNumbers[i] = byteCharacters.charCodeAt(i);
-                }
-                const byteArray = new Uint8Array(byteNumbers);
-                blob = new Blob([byteArray], { type: 'application/octet-stream' });
+                contentToUpload = fileContent; // Already Base64
             } catch (e) {
                 resultDiv.innerHTML = '<p style="color: red;">Invalid Base64 content.</p>';
                 return;
             }
         }
 
-        // Create a download link
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        link.textContent = `Download ${fileName}`;
-        link.style.display = 'block';
-        link.style.marginTop = '10px';
+        // GitHub API Configuration
+        const owner = 'eunhye1kim'; // Replace with your GitHub username
+        const repo = 'clipboard-to-file'; // Replace with your repository name
+        const branch = 'main'; // Replace with your branch name (e.g., main or master)
 
-        // Add instructions for sharing
-        resultDiv.innerHTML = `
-            <p>Click the link below to download the file:</p>
-            <p>To share this file with others, upload it to a cloud storage service or host it on a server.</p>
-        `;
-        resultDiv.appendChild(link);
+        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${fileName}`;
 
-        // Revoke the object URL to free memory after a delay
-        setTimeout(() => URL.revokeObjectURL(url), 60000); // 1 minute
+        // Check if the file already exists
+        let sha = null;
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    Authorization: `token ${githubToken}`,
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                sha = data.sha; // Get the SHA of the existing file
+            }
+        } catch (e) {
+            console.error('Error checking file existence:', e);
+        }
+
+        // Upload the file
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'PUT',
+                headers: {
+                    Authorization: `token ${githubToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: `Uploaded ${fileName} via web interface`, // Commit message
+                    content: contentToUpload, // Base64-encoded content
+                    sha: sha, // Required for updating an existing file
+                    branch: branch,
+                }),
+            });
+
+            if (response.ok) {
+                const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${fileName}`;
+                resultDiv.innerHTML = `
+                    <p>File successfully uploaded!</p>
+                    <p>Shareable Raw URL:</p>
+                    <a href="${rawUrl}" target="_blank">${rawUrl}</a>
+                `;
+            } else {
+                const errorData = await response.json();
+                resultDiv.innerHTML = `<p style="color: red;">Failed to upload file: ${errorData.message}</p>`;
+            }
+        } catch (e) {
+            resultDiv.innerHTML = `<p style="color: red;">An error occurred: ${e.message}</p>`;
+        }
     }
 </script>
 </body>
