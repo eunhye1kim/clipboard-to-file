@@ -47,12 +47,47 @@
     <label for="fileContent">Paste File Content:</label>
     <textarea id="fileContent" placeholder="Paste your file content here"></textarea>
 
+    <!-- 파일 탐색기 추가 -->
+    <label for="filePicker">Or Select a File:</label>
+    <input type="file" id="filePicker">
+
     <button onclick="handleSubmit()">Submit</button>
 
     <div class="result" id="result"></div>
 </div>
 
 <script>
+    // 파일 탐색기에서 파일 선택 시 동작
+    document.getElementById('filePicker').addEventListener('change', async (event) => {
+        const file = event.target.files[0]; // 선택한 파일 가져오기
+        if (!file) return;
+
+        // 파일 이름 자동 입력
+        document.getElementById('fileName').value = file.name;
+
+        // 파일 내용 읽기
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const content = e.target.result;
+
+            // 파일 유형에 따라 Base64 또는 텍스트로 변환
+            const fileType = document.getElementById('fileType').value;
+            if (fileType === 'text') {
+                document.getElementById('fileContent').value = content; // 텍스트 내용 붙여넣기
+            } else if (fileType === 'binary') {
+                const base64Content = btoa(new Uint8Array(content).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+                document.getElementById('fileContent').value = base64Content; // Base64 내용 붙여넣기
+            }
+        };
+
+        // 파일 읽기 방식 설정
+        if (document.getElementById('fileType').value === 'text') {
+            reader.readAsText(file); // 텍스트 파일로 읽기
+        } else {
+            reader.readAsArrayBuffer(file); // 바이너리 파일로 읽기
+        }
+    });
+
     async function handleSubmit() {
         const githubToken = document.getElementById('githubToken').value.trim();
         const fileType = document.getElementById('fileType').value;
@@ -88,8 +123,8 @@
         }
 
         // GitHub API Configuration
-        const owner = 'YOUR_GITHUB_USERNAME'; // Replace with your GitHub username
-        const repo = 'YOUR_GITHUB_REPO_NAME'; // Replace with your repository name
+        const owner = 'eunhye1kim'; // Replace with your GitHub username
+        const repo = 'clipboard-to-file'; // Replace with your repository name
         const branch = 'main'; // Replace with your branch name (e.g., main or master)
 
         const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${fileName}`;
