@@ -35,12 +35,6 @@
     <label for="githubToken">GitHub Personal Access Token (PAT):</label>
     <input type="password" id="githubToken" placeholder="Enter your GitHub PAT">
 
-    <label for="fileType">Select Input Type:</label>
-    <select id="fileType">
-        <option value="text">Text</option>
-        <option value="binary">Binary (Base64)</option>
-    </select>
-
     <label for="fileName">File Name:</label>
     <input type="text" id="fileName" placeholder="Enter file name (e.g., example.pdf)">
 
@@ -68,17 +62,9 @@
         // 파일 내용 읽기
         const reader = new FileReader();
         reader.onload = (e) => {
-            const content = e.target.result;
-
-            // 파일 유형에 따라 Base64 또는 텍스트로 변환
-            const fileType = document.getElementById('fileType').value;
-            if (fileType === 'text') {
-                document.getElementById('fileContent').value = content; // 텍스트 내용 붙여넣기
-            } else if (fileType === 'binary') {
-                // ArrayBuffer를 Base64로 변환
-                const base64Content = arrayBufferToBase64(content);
-                document.getElementById('fileContent').value = base64Content; // Base64 내용 붙여넣기
-            }
+            // ArrayBuffer를 Base64로 변환
+            const base64Content = arrayBufferToBase64(e.target.result);
+            document.getElementById('fileContent').value = base64Content; // Base64 내용 붙여넣기
         };
 
         // 파일 읽기 방식 설정
@@ -101,7 +87,6 @@
 
     async function handleSubmit() {
         const githubToken = document.getElementById('githubToken').value.trim();
-        const fileType = document.getElementById('fileType').value;
         const fileName = document.getElementById('fileName').value.trim();
         const fileContent = document.getElementById('fileContent').value.trim();
         const resultDiv = document.getElementById('result');
