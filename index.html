@@ -68,11 +68,7 @@
         };
 
         // 파일 읽기 방식 설정
-        if (document.getElementById('fileType').value === 'text') {
-            reader.readAsText(file); // 텍스트 파일로 읽기
-        } else {
-            reader.readAsArrayBuffer(file); // 바이너리 파일로 읽기
-        }
+        reader.readAsArrayBuffer(file); // 바이너리 파일로 읽기
     });
 
     // ArrayBuffer를 Base64로 변환하는 함수
